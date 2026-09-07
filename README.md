@@ -85,7 +85,48 @@ Open_CV/
 
 ---
 
-## 🧩 AR Math Game: Pinch & Drag Balok (`ar_math_game.py`)
+## 🚀 Daftar Program & Cara Menjalankan
+
+Berikut adalah seluruh program Python yang tersedia di repository ini dan cara menjalankannya:
+
+| Program / Skrip | Fungsi & Deskripsi | Perintah Menjalankan |
+| :--- | :--- | :--- |
+| **🎯 `ar_math_game.py`** | **Game AR Matematika (TikTok Style)**: Cubit (*pinch*) balok angka melayang, geser (*drag*), dan taruh (*drop*) ke slot jawaban `?`. Dilengkapi fitur *Super-Sticky Drag* (tahan halangan wajah). | `python ar_math_game.py` |
+| **🎭 `main.py`** | **Sistem Utama AI Computer Vision**: Face Identity Recognition (FaceNet), deteksi senyum & emosi, meme overlays (*Absolute Cinema*, *Roblox Man Face*), dan hand gestures. | `python main.py` |
+| **🎮 `math_game.py`** | **Game Kuis Matematika Jari**: Menjawab soal matematika dengan mengangkat jari tangan (0 - 10 jari) dengan sistem nyawa & streak combo. | `python math_game.py` |
+| **✨ `ar_experience.py`** | **Augmented Reality Studio**: 3 mode interaktif — *AR Air Canvas* (melukis di udara), *Face Cyber Visor & Crown*, dan *3D Hologram Cube*. | `python ar_experience.py` |
+
+---
+
+### 📷 Pilihan Sumber Kamera (Webcam vs DroidCam):
+
+Setiap program di atas mendukung argumen kamera berikut:
+
+1. **Webcam Laptop / Kamera Bawaan (Default):**
+   ```bash
+   python ar_math_game.py
+   # atau
+   python main.py
+   ```
+
+2. **Kamera HP melalui DroidCam WiFi (Direct IP):**
+   ```bash
+   python ar_math_game.py -i 192.168.1.15
+   # atau
+   python main.py -i 192.168.1.15
+   ```
+   *(Ganti `192.168.1.15` dengan IP yang tertera pada aplikasi DroidCam di HP Anda)*
+
+3. **Kamera Eksternal / DroidCam Client (Index Device):**
+   ```bash
+   python ar_math_game.py -s 1
+   # atau
+   python main.py -s 1
+   ```
+
+---
+
+## 🧩 Detail Game AR Matematika (`ar_math_game.py`)
 
 Game matematika interaktif Augmented Reality persis seperti video viral di TikTok / Claude:
 
@@ -99,113 +140,7 @@ python ar_math_game.py
 3. **Cubit (*Pinch*)** jempol dan telunjuk pada balok angka untuk memegangnya.
 4. **Geser (*Drag*)** tangan ke slot kosong yang bertanda `?`.
 5. **Lepas cubitan (*Drop*)** untuk menaruh angka. Jika persamaan benar, Anda naik ke **Tahap Berikutnya** dan skor bertambah `+50`!
-
----
-
-## ✨ Augmented Reality (AR) Studio (`ar_experience.py`)
-
-Aplikasi Augmented Reality interaktif dengan 3 mode canggih:
-
-```bash
-python ar_experience.py
-```
-
-### 🎛️ Mode AR yang Tersedia:
-- **Mode 1 (`Tekan '1'`) — AR Air Canvas (Lukis di Udara)**:
-  - Angkat **1 jari (Telunjuk)** untuk melukis di udara dengan kuas neon glowing.
-  - Angkat **2 jari (Telunjuk + Tengah)** untuk memilih warna kuas / penghapus pada menu palet di atas.
-  - Tekan **`c`** untuk menghapus canvas.
-- **Mode 2 (`Tekan '2'`) — AR Face Filters & Accessories**:
-  - Filter kacamata futuristik **Cyber Visor Hologram** dan **Golden Crown (Mahkota Emas)** yang otomatis mengikuti sudut kemiringan kepala.
-  - Tekan **`t`** untuk mengganti jenis filter wajah.
-- **Mode 3 (`Tekan '3'`) — AR 3D Hologram Cube**:
-  - Menampilkan kubus 3D wireframe holografik berputar yang melayang di atas telapak tangan secara real-time.
-
----
-
-## 🎮 Game Kuis Matematika Interaktif (`math_game.py`)
-
-Game kuis matematika edukatif dan seru yang dikontrol menggunakan **jumlah jari tangan yang diangkat (0 s.d. 10 jari)**!
-
-```bash
-# Jalankan Game Matematika
-python math_game.py
-
-# Menggunakan DroidCam
-python math_game.py -s 1
-```
-
-### 🎯 Cara Bermain:
-1. Soal matematika akan muncul di bagian atas layar (contoh: `4 + 3 = ?`).
-2. Angkat jari Anda (0 - 10 jari menggunakan 1 atau 2 tangan) sesuai hasil jawaban.
-3. Tahan posisi jari selama **1 detik** untuk mengonfirmasi jawaban.
-4. Kumpulkan **Streak Combo 🔥**, raih skor tertinggi, dan jangan sampai 3 nyawa habis!
-
----
-
----
-
-## 🛠️ Instalasi & Persiapan
-
-### 1. Clone Repository
-```bash
-git clone https://github.com/ManzZ67/Open_CV.git
-cd Open_CV
-```
-
-### 2. Buat Virtual Environment (Disarankan)
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# Linux / MacOS
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependensi
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 👥 Menambahkan Database Wajah
-
-Untuk mendaftarkan wajah baru ke sistem Face Recognition:
-1. Buka folder `data/identitas/`.
-2. Buat folder baru dengan **Nama Orang** yang ingin didaftarkan:
-   ```text
-   data/identitas/Budi/
-   ```
-3. Masukkan 1 atau beberapa foto wajah yang jelas ke dalam folder tersebut (format `.jpg`, `.jpeg`, `.png`).
-4. Saat program berjalan, Anda bisa menekan tombol **`r`** di keyboard untuk memuat ulang database tanpa perlu restart program!
-
----
-
-## 🚀 Cara Menjalankan
-
-### Opsi 1: Menggunakan Webcam Bawaan Laptop
-```bash
-python main.py
-```
-
-### Opsi 2: Menggunakan DroidCam PC Client (USB / WiFi)
-1. Buka aplikasi DroidCam di HP & PC, lalu klik **Start**.
-2. Jalankan:
-   ```bash
-   python main.py -s 1
-   ```
-   *(Ganti `1` dengan `2` jika DroidCam terdeteksi di index 2).*
-
-### Opsi 3: Menggunakan DroidCam Direct IP (WiFi)
-1. Pastikan HP dan Laptop terhubung ke WiFi / Hotspot yang sama.
-2. Catat IP yang tertera di aplikasi DroidCam HP (misal: `192.168.1.15`).
-3. Jalankan:
-   ```bash
-   python main.py -i 192.168.1.15
-   ```
+6. *Anti-Mantul:* Balok tetap menempel stabil di tangan meskipun tangan melewati area wajah (*face occlusion buffer* & *hysteresis lock*).
 
 ---
 
