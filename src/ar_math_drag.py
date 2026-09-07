@@ -15,8 +15,8 @@ class ARBlock:
         self.color = color
         self.is_dragging = False
 
-    def contains(self, px, py, margin=35):
-        """Mengecek apakah jari berada di atas balok (dengan toleransi grab yang nyaman)."""
+    def contains(self, px, py, margin=40):
+        """Mengecek apakah jari berada di atas balok (dengan toleransi grab yang luas dan nyaman)."""
         return (self.x - self.w // 2 - margin <= px <= self.x + self.w // 2 + margin and
                 self.y - self.h // 2 - margin <= py <= self.y + self.h // 2 + margin)
 
@@ -58,6 +58,11 @@ class ARMathDragEngine:
         self.offset_x = 0
         self.offset_y = 0
         self.lost_frames = 0
+        self.release_frames = 0
+        
+        # Smooth hand position
+        self.smooth_px = None
+        self.smooth_py = None
         
         # Soal & Balok Pilihan
         self.num1 = 10
@@ -68,11 +73,21 @@ class ARMathDragEngine:
         self.blocks = []
         self.success_animation_time = 0
         self.wrong_feedback_time = 0
+        self.frame_w = 1280
+        self.frame_h = 720
         
-        self.generate_new_stage()
+        self.generate_new_stage(1280, 720)
 
-    def generate_new_stage(self):
+    def generate_new_stage(self, w=None, h=None):
         """Membuat soal matematika yang seru dan balok-balok pilihan melayang."""
+        if w is not None:
+            self.frame_w = w
+        if h is not None:
+            self.frame_h = h
+            
+        w = self.frame_w
+        h = self.frame_h
+
         self.op = random.choice(["+", "-"])
         
         if self.op == "+":
@@ -98,8 +113,16 @@ class ARMathDragEngine:
         random.shuffle(options)
 
         self.blocks = []
-        # Posisi mengambang di kanan atas
-        spawn_positions = [(860, 150), (1000, 150), (1140, 150)]
+        # Posisi mengambang di kanan atas (dinamis menyesuaikan resolusi kamera)
+        b_y = int(h * 0.16)
+        spacing = int(120 * max(0.9, min(1.8, w / 1280.0)))
+        right_start = w - int(60 * max(0.9, min(1.8, w / 1280.0))) - (2 * spacing)
+        
+        spawn_positions = [
+            (right_start, b_y),
+            (right_start + spacing, b_y),
+            (right_start + 2 * spacing, b_y)
+        ]
         colors = [(220, 110, 30), (30, 130, 220), (160, 50, 200)]
 
         for i, val in enumerate(options):
@@ -109,44 +132,81 @@ class ARMathDragEngine:
 
         self.dragged_block = None
         self.lost_frames = 0
+        self.release_frames = 0
 
-    def update_hand_interaction(self, pinch_pt, is_pinching, w, h, ui_scale=1.0):
-        """Memproses logika pinch & drag dengan proteksi anti-lepas saat melewati wajah."""
-        # Jika tangan hilang sesaat (misal terhalang muka), tahan balok di posisi terakhir sampai 12 frame (~0.4s)
+    def update_hand_interaction(self, pinch_pt, is_pinching, w, h, ui_scale=1.0, pinch_dist=999.0):
+        """
+        Logika Drag & Drop dengan HYSTERESIS & SUPER-STICKY LOCK:
+        - Balok yang dipegang TIDAK AKAN MANTUL/LEPAS saat melewati muka!
+        - Menggunakan hysteresis: Mulai pinch < 55px, Lepas pinch > 95px
+        - Release debounce: Butuh beberapa frame jari terbuka baru drop
+        - Occlusion buffer: Tahan 45 frame (~1.5 detik) jika tracking tangan flicker di muka
+        """
+        self.frame_w = w
+        self.frame_h = h
+
+        # 1. Handling Tracking Loss (Saat tangan melintas di depan wajah)
         if pinch_pt is None:
             if self.dragged_block is not None:
                 self.lost_frames += 1
-                if self.lost_frames > 15:
+                # Pertahankan balok tetap terkunci di tangan hingga 45 frame (~1.5s)
+                if self.lost_frames > 45:
                     self.dragged_block.is_dragging = False
                     self.dragged_block = None
                     self.lost_frames = 0
+                    self.release_frames = 0
             return
 
         self.lost_frames = 0
-        px, py = pinch_pt
+        raw_px, raw_py = pinch_pt
 
-        # 1. Mulai Drag jika sedang Pinch pada sebuah Balok
-        if is_pinching:
-            if self.dragged_block is None:
+        # Smooth position filter (EMA) untuk meredam jitter di area wajah
+        if self.smooth_px is None:
+            self.smooth_px, self.smooth_py = raw_px, raw_py
+        else:
+            alpha = 0.70  # Smooth dan responsif
+            self.smooth_px = int(self.smooth_px + alpha * (raw_px - self.smooth_px))
+            self.smooth_py = int(self.smooth_py + alpha * (raw_py - self.smooth_py))
+
+        px, py = self.smooth_px, self.smooth_py
+
+        # Batas histeresis pinch:
+        # Untuk mulai grab: jarak < 55 * ui_scale
+        # Untuk mempertahankan grab (hold): jarak < 95 * ui_scale
+        grab_threshold = 55 * ui_scale
+        release_threshold = 95 * ui_scale
+
+        # 2. State: SEDANG TIDAK MEMEGANG BALOK -> Cek apakah mulai grab
+        if self.dragged_block is None:
+            if is_pinching or (pinch_dist < grab_threshold):
                 for block in reversed(self.blocks):
-                    if block.contains(px, py, margin=int(35 * ui_scale)):
+                    if block.contains(px, py, margin=int(50 * ui_scale)):
                         self.dragged_block = block
                         block.is_dragging = True
                         self.offset_x = block.x - px
                         self.offset_y = block.y - py
+                        self.release_frames = 0
                         break
-            else:
-                # Pergerakan mulus (Smooth drag)
-                target_x = px + self.offset_x
-                target_y = py + self.offset_y
-                self.dragged_block.x = int(self.dragged_block.x + 0.8 * (target_x - self.dragged_block.x))
-                self.dragged_block.y = int(self.dragged_block.y + 0.8 * (target_y - self.dragged_block.y))
+        # 3. State: SEDANG MEMEGANG BALOK (STICKY DRAG ACTIVE)
         else:
-            # 2. Lepas Pinch (Drop)
-            if self.dragged_block is not None:
+            # Balok hanya lepas jika jari BENAR-BENAR TERBUKA LEBAR (> 95px) beberapa frame berturut-turut
+            if pinch_dist > release_threshold:
+                self.release_frames += 1
+            else:
+                self.release_frames = 0
+
+            if self.release_frames >= 3:
+                # User memang sengaja melepaskan jari (Drop)
                 self.dragged_block.is_dragging = False
                 self.check_drop_target(w, h, ui_scale)
                 self.dragged_block = None
+                self.release_frames = 0
+            else:
+                # Sedang aktif menyeret balok (Kuat & Stabil menempel di jari)
+                target_x = px + self.offset_x
+                target_y = py + self.offset_y
+                self.dragged_block.x = int(self.dragged_block.x + 0.85 * (target_x - self.dragged_block.x))
+                self.dragged_block.y = int(self.dragged_block.y + 0.85 * (target_y - self.dragged_block.y))
 
     def get_slot_rects(self, w, h, ui_scale=1.0):
         """Menghitung koordinat kotak slot persamaan matematika di tengah bawah."""
@@ -167,7 +227,10 @@ class ARMathDragEngine:
         return slots
 
     def check_drop_target(self, w, h, ui_scale=1.0):
-        """Mengecek apakah balok yang di-drop berada di dalam atau dekat slot kosong yang tepat."""
+        """Mengecek apakah balok yang di-drop berada di dalam atau dekat slot target."""
+        if self.dragged_block is None:
+            return
+
         slots = self.get_slot_rects(w, h, ui_scale)
         tx, ty, tw, th = slots[self.missing_target]
         slot_cx = tx + tw // 2
@@ -176,9 +239,9 @@ class ARMathDragEngine:
         bx, by = self.dragged_block.x, self.dragged_block.y
         d_to_slot = dist((bx, by), (slot_cx, slot_cy))
 
-        # Toleransi drop fleksibel & magnetik (radius 110px atau berada di sekitar slot)
-        drop_margin = int(50 * ui_scale)
-        is_near_slot = (d_to_slot < 110 * ui_scale) or (
+        # Toleransi magnetik luas (radius 150px)
+        drop_margin = int(70 * ui_scale)
+        is_near_slot = (d_to_slot < 150 * ui_scale) or (
             (tx - drop_margin <= bx <= tx + tw + drop_margin) and
             (ty - drop_margin <= by <= ty + th + drop_margin)
         )
@@ -190,16 +253,13 @@ class ARMathDragEngine:
                 self.score += 50
                 self.stage += 1
                 self.success_animation_time = 25
-                self.generate_new_stage()
+                self.generate_new_stage(w, h)
             else:
-                # Jawaban Salah -> Kembalikan ke posisi awal
+                # Jawaban Salah -> Balok tetap di posisi tangan, tidak mental
                 self.wrong_feedback_time = 20
-                self.dragged_block.x = self.dragged_block.orig_x
-                self.dragged_block.y = self.dragged_block.orig_y
-        else:
-            # Tidak ditaruh di slot -> Kembalikan ke posisi awal
-            self.dragged_block.x = self.dragged_block.orig_x
-            self.dragged_block.y = self.dragged_block.orig_y
+        # Jika dilepas di udara bebas, balok tetap berada di posisi dilepas tanpa mantul/mental ke pojok!
+        # Catatan: Jika dilepas di udara (bukan di slot), balok tetap berada di posisi dilepas
+        # sehingga pemain bisa langsung mengambilnya lagi tanpa harus mental ke atas!
 
     def draw_game_scene(self, img, pinch_pt, is_pinching, ui_scale=1.0):
         h, w = img.shape[:2]
@@ -227,9 +287,9 @@ class ARMathDragEngine:
         is_hovering_target = False
         if self.dragged_block is not None:
             d_hover = dist((self.dragged_block.x, self.dragged_block.y), (slot_cx, slot_cy))
-            if d_hover < 140 * ui_scale:
+            if d_hover < 160 * ui_scale:
                 is_hovering_target = True
-                cv2.line(img, (self.dragged_block.x, self.dragged_block.y), (slot_cx, slot_cy), (0, 255, 120), 2, cv2.LINE_AA)
+                cv2.line(img, (self.dragged_block.x, self.dragged_block.y), (slot_cx, slot_cy), (0, 255, 120), 3, cv2.LINE_AA)
 
         def draw_slot(rect, text, is_empty=False):
             sx, sy, sw, sh = rect

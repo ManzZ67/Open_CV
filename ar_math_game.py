@@ -73,8 +73,9 @@ def main():
     hands = mp_hands.Hands(
         static_image_mode=False,
         max_num_hands=1,
-        min_detection_confidence=0.55,
-        min_tracking_confidence=0.55
+        model_complexity=1,
+        min_detection_confidence=0.45,
+        min_tracking_confidence=0.45
     )
 
     window_name = "AR Math Game"
@@ -95,6 +96,8 @@ def main():
     print(" - 'f' : Fullscreen On / Off")
     print(" - 'q' atau 'ESC' : Keluar\n")
 
+    first_frame = True
+
     while cap.isOpened():
         success, img = cap.read()
         if not success:
@@ -106,11 +109,17 @@ def main():
 
         h, w = img.shape[:2]
         ui_scale = max(0.9, min(2.0, w / 1280.0))
+        
+        if first_frame:
+            game.generate_new_stage(w, h)
+            first_frame = False
+
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         # 1. Deteksi Tangan & Posisi Pinch
         hand_results = hands.process(img_rgb)
         pinch_pt = None
+        pinch_dist = 999.0
         is_pinching = False
 
         if hand_results.multi_hand_landmarks:
@@ -131,12 +140,12 @@ def main():
                 pinch_pt = ((thumb_tip[0] + index_tip[0]) // 2, (thumb_tip[1] + index_tip[1]) // 2)
                 pinch_dist = dist(thumb_tip, index_tip)
 
-                # Jika jarak < 52 pixel -> SEDANG PINCH / MEMEGANG (Lebih responsif & tidak mudah lepas)
-                if pinch_dist < 52 * ui_scale:
+                # Status pinch awal
+                if pinch_dist < 55 * ui_scale:
                     is_pinching = True
 
-        # 2. Update Logika Pinch & Drag Balok AR
-        game.update_hand_interaction(pinch_pt, is_pinching, w, h, ui_scale)
+        # 2. Update Logika Pinch & Drag Balok AR (dengan Hysteresis & Super-Sticky Lock)
+        game.update_hand_interaction(pinch_pt, is_pinching, w, h, ui_scale, pinch_dist)
 
         # 3. Render Tampilan Visual Game AR
         game.draw_game_scene(img, pinch_pt, is_pinching, ui_scale)
