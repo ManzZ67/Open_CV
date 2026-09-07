@@ -69,15 +69,38 @@ Open_CV/
 │   ├── face_recognition.py     # Modul FaceNet & MediaPipe Face Identity
 │   ├── face_expression.py      # Modul MediaPipe Face Mesh Expressions
 │   ├── hand_tracking.py        # Modul MediaPipe Hand Tracking & Gestures
-│   ├── math_game.py            # Modul logika kuis matematika & rendering game
+│   ├── math_game.py            # Modul logika kuis matematika & game
+│   ├── ar_filters.py           # Modul filter AR (Air Canvas, Face Visor, 3D Cube)
 │   └── utils.py                # Fungsi bantuan matematika, alpha overlay & HUD
 │
 ├── 🚀 main.py                  # Skrip utama Face AI & Meme Overlays
 ├── 🎮 math_game.py             # Skrip Game Kuis Matematika berbasis Gerakan Jari
+├── ✨ ar_experience.py         # Skrip Augmented Reality (AR) Studio Multi-Mode
 ├── 📦 requirements.txt         # Daftar dependensi Python
 ├── 📄 .gitignore               # Konfigurasi filter Git
 └── 📖 README.md                # Dokumentasi proyek
 ```
+
+---
+
+## ✨ Augmented Reality (AR) Studio (`ar_experience.py`)
+
+Aplikasi Augmented Reality interaktif dengan 3 mode canggih:
+
+```bash
+python ar_experience.py
+```
+
+### 🎛️ Mode AR yang Tersedia:
+- **Mode 1 (`Tekan '1'`) — AR Air Canvas (Lukis di Udara)**:
+  - Angkat **1 jari (Telunjuk)** untuk melukis di udara dengan kuas neon glowing.
+  - Angkat **2 jari (Telunjuk + Tengah)** untuk memilih warna kuas / penghapus pada menu palet di atas.
+  - Tekan **`c`** untuk menghapus canvas.
+- **Mode 2 (`Tekan '2'`) — AR Face Filters & Accessories**:
+  - Filter kacamata futuristik **Cyber Visor Hologram** dan **Golden Crown (Mahkota Emas)** yang otomatis mengikuti sudut kemiringan kepala.
+  - Tekan **`t`** untuk mengganti jenis filter wajah.
+- **Mode 3 (`Tekan '3'`) — AR 3D Hologram Cube**:
+  - Menampilkan kubus 3D wireframe holografik berputar yang melayang di atas telapak tangan secara real-time.
 
 ---
 
