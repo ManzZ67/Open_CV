@@ -70,13 +70,11 @@ Open_CV/
 │   ├── face_expression.py      # Modul MediaPipe Face Mesh Expressions
 │   ├── hand_tracking.py        # Modul MediaPipe Hand Tracking & Gestures
 │   ├── ar_math_drag.py         # Modul Game AR Math Drag & Drop Balok Angka
-│   ├── math_game.py            # Modul logika kuis matematika & game
 │   ├── ar_filters.py           # Modul filter AR (Air Canvas, Face Visor, 3D Cube)
 │   └── utils.py                # Fungsi bantuan matematika, alpha overlay & HUD
 │
 ├── 🚀 main.py                  # Skrip utama Face AI & Meme Overlays
 ├── 🧩 ar_math_game.py          # Skrip AR Math Game (Pinch & Drag Balok ke Slot)
-├── 🎮 math_game.py             # Skrip Game Kuis Matematika berbasis Gerakan Jari
 ├── ✨ ar_experience.py         # Skrip Augmented Reality (AR) Studio Multi-Mode
 ├── 📦 requirements.txt         # Daftar dependensi Python
 ├── 📄 .gitignore               # Konfigurasi filter Git
@@ -93,7 +91,6 @@ Berikut adalah seluruh program Python yang tersedia di repository ini dan cara m
 | :--- | :--- | :--- |
 | **🎯 `ar_math_game.py`** | **Game AR Matematika (TikTok Style)**: Cubit (*pinch*) balok angka melayang, geser (*drag*), dan taruh (*drop*) ke slot jawaban `?`. Dilengkapi fitur *Super-Sticky Drag* (tahan halangan wajah). | `python ar_math_game.py` |
 | **🎭 `main.py`** | **Sistem Utama AI Computer Vision**: Face Identity Recognition (FaceNet), deteksi senyum & emosi, meme overlays (*Absolute Cinema*, *Roblox Man Face*), dan hand gestures. | `python main.py` |
-| **🎮 `math_game.py`** | **Game Kuis Matematika Jari**: Menjawab soal matematika dengan mengangkat jari tangan (0 - 10 jari) dengan sistem nyawa & streak combo. | `python math_game.py` |
 | **✨ `ar_experience.py`** | **Augmented Reality Studio**: 3 mode interaktif — *AR Air Canvas* (melukis di udara), *Face Cyber Visor & Crown*, dan *3D Hologram Cube*. | `python ar_experience.py` |
 
 ---
