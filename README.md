@@ -33,7 +33,7 @@
 - 🖐️ **Dual Hand Tracking**: Melacak hingga 2 tangan sekaligus dan menghitung orientasi jari secara presisi.
 - 🎬 **Meme Triggers & Overlays**:
   - **Dua Tangan Terangkat (10 Jari)** $\rightarrow$ Memunculkan efek watermark & logo **Absolute Cinema**!
-  - **Tersenyum** $\rightarrow$ Otomatis menempelkan stiker **Roblox Man Face** ke wajah.
+  - **Tersenyum** $\rightarrow$ Otomatis menempelkan stiker **Roblox Man Face** ke layar.
   - **Pose Jari Tengah** $\rightarrow$ Respons teks interaktif.
 - 📱 **Dukungan DroidCam**: Bisa menggunakan kamera HP baik melalui **Client Virtual Cam USB/WiFi** maupun **Direct IP Stream**.
 - ⚡ **GPU Accelerated**: Mendukung CUDA / GPU NVIDIA bila tersedia untuk performa embedding instan.
@@ -49,7 +49,6 @@ Open_CV/
 │
 ├── 🎨 assets/
 │   └── images/                 # Aset gambar: logo watermark, stiker meme
-│       ├── absolute_cinema.jpg
 │       ├── cinema_logo.png
 │       └── meme_senyum.jpg
 │
@@ -65,7 +64,14 @@ Open_CV/
 ├── 💾 outputs/
 │   └── output_test.png         # Penyimpanan hasil capture / export frame
 │
-├── 🚀 main.py                  # Skrip utama program
+├── 📁 src/                     # MODUL PROGRAM TERPISAH
+│   ├── __init__.py
+│   ├── face_recognition.py     # Modul FaceNet & MediaPipe Face Identity
+│   ├── face_expression.py      # Modul MediaPipe Face Mesh Expressions
+│   ├── hand_tracking.py        # Modul MediaPipe Hand Tracking & Gestures
+│   └── utils.py                # Fungsi bantuan matematika, alpha overlay & HUD
+│
+├── 🚀 main.py                  # Skrip utama yang ringkas (< 150 baris)
 ├── 📦 requirements.txt         # Daftar dependensi Python
 ├── 📄 .gitignore               # Konfigurasi filter Git
 └── 📖 README.md                # Dokumentasi proyek
@@ -141,8 +147,8 @@ python main.py
 
 | Gesture / Aksi | Trigger | Hasil Tampilan |
 | :--- | :--- | :--- |
-| **Dua Tangan Terangkat (10 Jari)** | Angkat 2 telapak tangan terbuka ke kamera | 🎬 Mode **Absolute Cinema** & Logo Cinema muncul |
-| **Wajah Tersenyum** | Senyum lebar terdeteksi oleh Face Mesh | 🗿 Overlay stiker **Roblox Man Face** menutupi wajah |
+| **Dua Tangan Terangkat (10 Jari)** | Angkat 2 telapak tangan terbuka ke kamera | 🎬 Mode **Absolute Cinema** & Logo Cinema muncul di bawah layar |
+| **Wajah Tersenyum** | Senyum lebar terdeteksi oleh Face Mesh | 🗿 Overlay stiker **Roblox Man Face** muncul di pojok atas |
 | **Pose Jari Tengah (Middle Finger)** | Angkat jari tengah saja | ⚠️ Notifikasi teks interaktif di layar |
 | **Identitas Dikenal** | Wajah cocok dengan dataset di `data/identitas/` | 🏷️ Bounding box hijau + Nama & Similarity % |
 | **Identitas Tidak Dikenal** | Wajah baru / belum terdaftar | ❓ Bounding box merah + *"Tidak Dikenal"* |
@@ -157,6 +163,7 @@ Saat jendela kamera aktif, gunakan tombol keyboard berikut:
 | :---: | :--- |
 | **`m`** | **Toggle Mirror**: Membalik tampilan kamera (Flip Horizontal On / Off) |
 | **`r`** | **Reload Database**: Memuat ulang folder `data/identitas/` secara instan |
+| **`s`** | **Screenshot**: Mengambil foto tangkapan layar HD (disimpan ke `outputs/`) |
 | **`f`** | **Fullscreen**: Mengaktifkan / menonaktifkan tampilan layar penuh |
 | **`q`** / **`ESC`** | **Keluar**: Menutup aplikasi |
 
