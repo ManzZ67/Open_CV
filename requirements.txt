@@ -1,0 +1,6 @@
+opencv-python==4.14.0.94
+mediapipe==0.10.20
+numpy==1.26.4
+ultralytics
+torch
+torchvision
