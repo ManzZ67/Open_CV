@@ -15,7 +15,7 @@ class ARBlock:
         self.color = color
         self.is_dragging = False
 
-    def contains(self, px, py, margin=25):
+    def contains(self, px, py, margin=35):
         """Mengecek apakah jari berada di atas balok (dengan toleransi grab yang nyaman)."""
         return (self.x - self.w // 2 - margin <= px <= self.x + self.w // 2 + margin and
                 self.y - self.h // 2 - margin <= py <= self.y + self.h // 2 + margin)
@@ -30,8 +30,8 @@ class ARBlock:
 
         # Efek bayangan / glow saat di-drag
         if self.is_dragging:
-            cv2.rectangle(img, (x1 - 5, y1 - 5), (x2 + 5, y2 + 5), (0, 255, 255), 4, cv2.LINE_AA)
-            bg_color = (min(255, self.color[0] + 45), min(255, self.color[1] + 45), min(255, self.color[2] + 45))
+            cv2.rectangle(img, (x1 - 6, y1 - 6), (x2 + 6, y2 + 6), (0, 255, 255), 4, cv2.LINE_AA)
+            bg_color = (min(255, self.color[0] + 50), min(255, self.color[1] + 50), min(255, self.color[2] + 50))
         else:
             cv2.rectangle(img, (x1, y1), (x2, y2), (255, 255, 255), 2, cv2.LINE_AA)
             bg_color = self.color
@@ -57,6 +57,7 @@ class ARMathDragEngine:
         self.dragged_block = None
         self.offset_x = 0
         self.offset_y = 0
+        self.lost_frames = 0
         
         # Soal & Balok Pilihan
         self.num1 = 10
@@ -107,31 +108,39 @@ class ARMathDragEngine:
             self.blocks.append(ARBlock(val, pos, size=(85, 85), color=col))
 
         self.dragged_block = None
+        self.lost_frames = 0
 
     def update_hand_interaction(self, pinch_pt, is_pinching, w, h, ui_scale=1.0):
-        """Memproses logika pinch, drag, dan drop balok AR dengan toleransi yang nyaman."""
+        """Memproses logika pinch & drag dengan proteksi anti-lepas saat melewati wajah."""
+        # Jika tangan hilang sesaat (misal terhalang muka), tahan balok di posisi terakhir sampai 12 frame (~0.4s)
         if pinch_pt is None:
-            if self.dragged_block:
-                self.dragged_block.is_dragging = False
-                self.dragged_block = None
+            if self.dragged_block is not None:
+                self.lost_frames += 1
+                if self.lost_frames > 15:
+                    self.dragged_block.is_dragging = False
+                    self.dragged_block = None
+                    self.lost_frames = 0
             return
 
+        self.lost_frames = 0
         px, py = pinch_pt
 
         # 1. Mulai Drag jika sedang Pinch pada sebuah Balok
         if is_pinching:
             if self.dragged_block is None:
                 for block in reversed(self.blocks):
-                    if block.contains(px, py, margin=int(30 * ui_scale)):
+                    if block.contains(px, py, margin=int(35 * ui_scale)):
                         self.dragged_block = block
                         block.is_dragging = True
                         self.offset_x = block.x - px
                         self.offset_y = block.y - py
                         break
             else:
-                # Sedang menyeret balok mengikuti jari
-                self.dragged_block.x = px + self.offset_x
-                self.dragged_block.y = py + self.offset_y
+                # Pergerakan mulus (Smooth drag)
+                target_x = px + self.offset_x
+                target_y = py + self.offset_y
+                self.dragged_block.x = int(self.dragged_block.x + 0.8 * (target_x - self.dragged_block.x))
+                self.dragged_block.y = int(self.dragged_block.y + 0.8 * (target_y - self.dragged_block.y))
         else:
             # 2. Lepas Pinch (Drop)
             if self.dragged_block is not None:
@@ -167,9 +176,9 @@ class ARMathDragEngine:
         bx, by = self.dragged_block.x, self.dragged_block.y
         d_to_slot = dist((bx, by), (slot_cx, slot_cy))
 
-        # Toleransi drop yang sangat fleksibel (jarak radius 100px atau berada di sekitar slot)
-        drop_margin = int(45 * ui_scale)
-        is_near_slot = (d_to_slot < 95 * ui_scale) or (
+        # Toleransi drop fleksibel & magnetik (radius 110px atau berada di sekitar slot)
+        drop_margin = int(50 * ui_scale)
+        is_near_slot = (d_to_slot < 110 * ui_scale) or (
             (tx - drop_margin <= bx <= tx + tw + drop_margin) and
             (ty - drop_margin <= by <= ty + th + drop_margin)
         )
@@ -183,7 +192,7 @@ class ARMathDragEngine:
                 self.success_animation_time = 25
                 self.generate_new_stage()
             else:
-                # Jawaban Salah -> Feedback getar/merah & kembalikan ke atas
+                # Jawaban Salah -> Kembalikan ke posisi awal
                 self.wrong_feedback_time = 20
                 self.dragged_block.x = self.dragged_block.orig_x
                 self.dragged_block.y = self.dragged_block.orig_y
@@ -214,23 +223,20 @@ class ARMathDragEngine:
         tx, ty, tw, th = slots[self.missing_target]
         slot_cx, slot_cy = tx + tw // 2, ty + th // 2
 
-        # Cek apakah ada balok yang sedang di-drag dekat dengan slot target
+        # Indikator Magnetik
         is_hovering_target = False
         if self.dragged_block is not None:
             d_hover = dist((self.dragged_block.x, self.dragged_block.y), (slot_cx, slot_cy))
-            if d_hover < 120 * ui_scale:
+            if d_hover < 140 * ui_scale:
                 is_hovering_target = True
-                # Gambar garis magnetik pemandu ke slot target
                 cv2.line(img, (self.dragged_block.x, self.dragged_block.y), (slot_cx, slot_cy), (0, 255, 120), 2, cv2.LINE_AA)
 
         def draw_slot(rect, text, is_empty=False):
             sx, sy, sw, sh = rect
             if is_empty:
-                # Slot Kosong (Target Drop)
                 slot_border_col = (0, 255, 0) if is_hovering_target else (0, 255, 255)
                 thickness = 4 if is_hovering_target else 3
                 
-                # Glowing background saat didekati balok
                 if is_hovering_target:
                     slot_bg = img.copy()
                     cv2.rectangle(slot_bg, (sx, sy), (sx + sw, sy + sh), (0, 180, 0), -1)
@@ -239,7 +245,6 @@ class ARMathDragEngine:
                 cv2.rectangle(img, (sx, sy), (sx + sw, sy + sh), slot_border_col, thickness, cv2.LINE_AA)
                 cv2.putText(img, "?", (sx + int(sw * 0.35), sy + int(sh * 0.68)), cv2.FONT_HERSHEY_DUPLEX, 1.4 * ui_scale, slot_border_col, 3, cv2.LINE_AA)
             else:
-                # Kotak Hijau Mantap
                 cv2.rectangle(img, (sx, sy), (sx + sw, sy + sh), (40, 150, 40), -1)
                 cv2.rectangle(img, (sx, sy), (sx + sw, sy + sh), (255, 255, 255), 2, cv2.LINE_AA)
                 font_scale = 1.3 * ui_scale

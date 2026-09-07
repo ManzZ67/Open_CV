@@ -72,9 +72,9 @@ def main():
 
     hands = mp_hands.Hands(
         static_image_mode=False,
-        max_num_hands=1,  # Cukup 1 tangan aktif untuk kontrol yang presisi
-        min_detection_confidence=0.75,
-        min_tracking_confidence=0.75
+        max_num_hands=1,
+        min_detection_confidence=0.55,
+        min_tracking_confidence=0.55
     )
 
     window_name = "AR Math Game"
