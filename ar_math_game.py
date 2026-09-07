@@ -131,12 +131,12 @@ def main():
                 pinch_pt = ((thumb_tip[0] + index_tip[0]) // 2, (thumb_tip[1] + index_tip[1]) // 2)
                 pinch_dist = dist(thumb_tip, index_tip)
 
-                # Jika jarak < 42 pixel -> SEDANG PINCH / MEMEGANG
-                if pinch_dist < 42 * ui_scale:
+                # Jika jarak < 52 pixel -> SEDANG PINCH / MEMEGANG (Lebih responsif & tidak mudah lepas)
+                if pinch_dist < 52 * ui_scale:
                     is_pinching = True
 
         # 2. Update Logika Pinch & Drag Balok AR
-        game.update_hand_interaction(pinch_pt, is_pinching, w, h)
+        game.update_hand_interaction(pinch_pt, is_pinching, w, h, ui_scale)
 
         # 3. Render Tampilan Visual Game AR
         game.draw_game_scene(img, pinch_pt, is_pinching, ui_scale)

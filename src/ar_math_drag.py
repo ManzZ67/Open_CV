@@ -14,11 +14,11 @@ class ARBlock:
         self.orig_x, self.orig_y = self.x, self.y
         self.color = color
         self.is_dragging = False
-        self.is_placed = False
 
-    def contains(self, px, py):
-        return (self.x - self.w // 2 <= px <= self.x + self.w // 2 and
-                self.y - self.h // 2 <= py <= self.y + self.h // 2)
+    def contains(self, px, py, margin=25):
+        """Mengecek apakah jari berada di atas balok (dengan toleransi grab yang nyaman)."""
+        return (self.x - self.w // 2 - margin <= px <= self.x + self.w // 2 + margin and
+                self.y - self.h // 2 - margin <= py <= self.y + self.h // 2 + margin)
 
     def draw(self, img, ui_scale=1.0):
         w = int(self.w * ui_scale)
@@ -30,8 +30,8 @@ class ARBlock:
 
         # Efek bayangan / glow saat di-drag
         if self.is_dragging:
-            cv2.rectangle(img, (x1 - 4, y1 - 4), (x2 + 4, y2 + 4), (0, 255, 255), 3, cv2.LINE_AA)
-            bg_color = (min(255, self.color[0] + 40), min(255, self.color[1] + 40), min(255, self.color[2] + 40))
+            cv2.rectangle(img, (x1 - 5, y1 - 5), (x2 + 5, y2 + 5), (0, 255, 255), 4, cv2.LINE_AA)
+            bg_color = (min(255, self.color[0] + 45), min(255, self.color[1] + 45), min(255, self.color[2] + 45))
         else:
             cv2.rectangle(img, (x1, y1), (x2, y2), (255, 255, 255), 2, cv2.LINE_AA)
             bg_color = self.color
@@ -66,19 +66,20 @@ class ARMathDragEngine:
         self.missing_target = "ans"  # "num1", "num2", atau "ans"
         self.blocks = []
         self.success_animation_time = 0
+        self.wrong_feedback_time = 0
         
         self.generate_new_stage()
 
     def generate_new_stage(self):
-        """Membuat soal matematika acak dan balok-balok pilihan melayang."""
+        """Membuat soal matematika yang seru dan balok-balok pilihan melayang."""
         self.op = random.choice(["+", "-"])
         
         if self.op == "+":
-            self.ans = random.randint(5, 10 + self.stage * 4)
+            self.ans = random.randint(6, 12 + self.stage * 3)
             self.num1 = random.randint(1, self.ans - 1)
             self.num2 = self.ans - self.num1
         else:
-            self.num1 = random.randint(5, 10 + self.stage * 4)
+            self.num1 = random.randint(6, 12 + self.stage * 3)
             self.num2 = random.randint(1, self.num1 - 1)
             self.ans = self.num1 - self.num2
 
@@ -97,7 +98,7 @@ class ARMathDragEngine:
 
         self.blocks = []
         # Posisi mengambang di kanan atas
-        spawn_positions = [(880, 150), (1020, 150), (1160, 150)]
+        spawn_positions = [(860, 150), (1000, 150), (1140, 150)]
         colors = [(220, 110, 30), (30, 130, 220), (160, 50, 200)]
 
         for i, val in enumerate(options):
@@ -107,8 +108,8 @@ class ARMathDragEngine:
 
         self.dragged_block = None
 
-    def update_hand_interaction(self, pinch_pt, is_pinching, w, h):
-        """Memproses logika pinch, drag, dan drop balok AR."""
+    def update_hand_interaction(self, pinch_pt, is_pinching, w, h, ui_scale=1.0):
+        """Memproses logika pinch, drag, dan drop balok AR dengan toleransi yang nyaman."""
         if pinch_pt is None:
             if self.dragged_block:
                 self.dragged_block.is_dragging = False
@@ -121,7 +122,7 @@ class ARMathDragEngine:
         if is_pinching:
             if self.dragged_block is None:
                 for block in reversed(self.blocks):
-                    if block.contains(px, py):
+                    if block.contains(px, py, margin=int(30 * ui_scale)):
                         self.dragged_block = block
                         block.is_dragging = True
                         self.offset_x = block.x - px
@@ -135,7 +136,7 @@ class ARMathDragEngine:
             # 2. Lepas Pinch (Drop)
             if self.dragged_block is not None:
                 self.dragged_block.is_dragging = False
-                self.check_drop_target(w, h)
+                self.check_drop_target(w, h, ui_scale)
                 self.dragged_block = None
 
     def get_slot_rects(self, w, h, ui_scale=1.0):
@@ -156,28 +157,38 @@ class ARMathDragEngine:
         }
         return slots
 
-    def check_drop_target(self, w, h):
-        """Mengecek apakah balok yang di-drop berada di dalam slot kosong yang tepat."""
-        slots = self.get_slot_rects(w, h)
+    def check_drop_target(self, w, h, ui_scale=1.0):
+        """Mengecek apakah balok yang di-drop berada di dalam atau dekat slot kosong yang tepat."""
+        slots = self.get_slot_rects(w, h, ui_scale)
         tx, ty, tw, th = slots[self.missing_target]
+        slot_cx = tx + tw // 2
+        slot_cy = ty + th // 2
 
         bx, by = self.dragged_block.x, self.dragged_block.y
+        d_to_slot = dist((bx, by), (slot_cx, slot_cy))
 
-        # Cek apakah balok dijatuhkan di dalam target slot
-        if (tx <= bx <= tx + tw) and (ty <= by <= ty + th):
+        # Toleransi drop yang sangat fleksibel (jarak radius 100px atau berada di sekitar slot)
+        drop_margin = int(45 * ui_scale)
+        is_near_slot = (d_to_slot < 95 * ui_scale) or (
+            (tx - drop_margin <= bx <= tx + tw + drop_margin) and
+            (ty - drop_margin <= by <= ty + th + drop_margin)
+        )
+
+        if is_near_slot:
             correct_val = self.num2 if self.missing_target == "num2" else self.ans
             if self.dragged_block.value == correct_val:
-                # BENAR!
+                # JAWABAN BENAR!
                 self.score += 50
                 self.stage += 1
                 self.success_animation_time = 25
                 self.generate_new_stage()
             else:
-                # Salah -> Kembalikan ke posisi awal
+                # Jawaban Salah -> Feedback getar/merah & kembalikan ke atas
+                self.wrong_feedback_time = 20
                 self.dragged_block.x = self.dragged_block.orig_x
                 self.dragged_block.y = self.dragged_block.orig_y
         else:
-            # Tidak masuk slot -> Kembalikan
+            # Tidak ditaruh di slot -> Kembalikan ke posisi awal
             self.dragged_block.x = self.dragged_block.orig_x
             self.dragged_block.y = self.dragged_block.orig_y
 
@@ -200,20 +211,40 @@ class ARMathDragEngine:
         # 2. PERSAMAAN MATEMATIKA (SLOT KOTAK DI TENGAH BAWAH)
         # ======================================================================
         slots = self.get_slot_rects(w, h, ui_scale)
+        tx, ty, tw, th = slots[self.missing_target]
+        slot_cx, slot_cy = tx + tw // 2, ty + th // 2
+
+        # Cek apakah ada balok yang sedang di-drag dekat dengan slot target
+        is_hovering_target = False
+        if self.dragged_block is not None:
+            d_hover = dist((self.dragged_block.x, self.dragged_block.y), (slot_cx, slot_cy))
+            if d_hover < 120 * ui_scale:
+                is_hovering_target = True
+                # Gambar garis magnetik pemandu ke slot target
+                cv2.line(img, (self.dragged_block.x, self.dragged_block.y), (slot_cx, slot_cy), (0, 255, 120), 2, cv2.LINE_AA)
 
         def draw_slot(rect, text, is_empty=False):
             sx, sy, sw, sh = rect
             if is_empty:
                 # Slot Kosong (Target Drop)
-                cv2.rectangle(img, (sx, sy), (sx + sw, sy + sh), (0, 255, 255), 3, cv2.LINE_AA)
-                cv2.putText(img, "?", (sx + int(sw * 0.35), sy + int(sh * 0.68)), cv2.FONT_HERSHEY_DUPLEX, 1.4 * ui_scale, (0, 255, 255), 3, cv2.LINE_AA)
+                slot_border_col = (0, 255, 0) if is_hovering_target else (0, 255, 255)
+                thickness = 4 if is_hovering_target else 3
+                
+                # Glowing background saat didekati balok
+                if is_hovering_target:
+                    slot_bg = img.copy()
+                    cv2.rectangle(slot_bg, (sx, sy), (sx + sw, sy + sh), (0, 180, 0), -1)
+                    cv2.addWeighted(slot_bg, 0.40, img, 0.60, 0, img)
+                
+                cv2.rectangle(img, (sx, sy), (sx + sw, sy + sh), slot_border_col, thickness, cv2.LINE_AA)
+                cv2.putText(img, "?", (sx + int(sw * 0.35), sy + int(sh * 0.68)), cv2.FONT_HERSHEY_DUPLEX, 1.4 * ui_scale, slot_border_col, 3, cv2.LINE_AA)
             else:
                 # Kotak Hijau Mantap
                 cv2.rectangle(img, (sx, sy), (sx + sw, sy + sh), (40, 150, 40), -1)
                 cv2.rectangle(img, (sx, sy), (sx + sw, sy + sh), (255, 255, 255), 2, cv2.LINE_AA)
                 font_scale = 1.3 * ui_scale
-                (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_DUPLEX, font_scale, 2)
-                cv2.putText(img, text, (sx + (sw - tw) // 2, sy + (sh + th) // 2), cv2.FONT_HERSHEY_DUPLEX, font_scale, (255, 255, 255), 2, cv2.LINE_AA)
+                (tw_t, th_t), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_DUPLEX, font_scale, 2)
+                cv2.putText(img, text, (sx + (sw - tw_t) // 2, sy + (sh + th_t) // 2), cv2.FONT_HERSHEY_DUPLEX, font_scale, (255, 255, 255), 2, cv2.LINE_AA)
 
         draw_slot(slots["num1"], str(self.num1))
         draw_slot(slots["op"], self.op)
@@ -233,7 +264,7 @@ class ARMathDragEngine:
         if pinch_pt is not None:
             px, py = pinch_pt
             cursor_color = (0, 255, 0) if is_pinching else (0, 255, 255)
-            cv2.circle(img, (px, py), int(16 * ui_scale), cursor_color, 2, cv2.LINE_AA)
+            cv2.circle(img, (px, py), int(18 * ui_scale), cursor_color, 2, cv2.LINE_AA)
             if is_pinching:
                 cv2.circle(img, (px, py), int(8 * ui_scale), (0, 255, 0), -1, cv2.LINE_AA)
 
@@ -244,7 +275,11 @@ class ARMathDragEngine:
         (htw, _), _ = cv2.getTextSize(hint_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55 * ui_scale, 1)
         cv2.putText(img, hint_text, ((w - htw) // 2, h - int(25 * ui_scale)), cv2.FONT_HERSHEY_SIMPLEX, 0.55 * ui_scale, (255, 255, 255), 1, cv2.LINE_AA)
 
-        # Animasi Sukses
+        # Feedback Animasi
         if self.success_animation_time > 0:
             self.success_animation_time -= 1
             cv2.putText(img, "BENAR! +50", (w // 2 - int(100 * ui_scale), int(120 * ui_scale)), cv2.FONT_HERSHEY_DUPLEX, 1.2 * ui_scale, (0, 255, 120), 3, cv2.LINE_AA)
+        
+        if self.wrong_feedback_time > 0:
+            self.wrong_feedback_time -= 1
+            cv2.putText(img, "SALAH!", (w // 2 - int(60 * ui_scale), int(120 * ui_scale)), cv2.FONT_HERSHEY_DUPLEX, 1.2 * ui_scale, (0, 0, 255), 3, cv2.LINE_AA)
