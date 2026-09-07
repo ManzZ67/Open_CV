@@ -69,13 +69,37 @@ Open_CV/
 │   ├── face_recognition.py     # Modul FaceNet & MediaPipe Face Identity
 │   ├── face_expression.py      # Modul MediaPipe Face Mesh Expressions
 │   ├── hand_tracking.py        # Modul MediaPipe Hand Tracking & Gestures
+│   ├── math_game.py            # Modul logika kuis matematika & rendering game
 │   └── utils.py                # Fungsi bantuan matematika, alpha overlay & HUD
 │
-├── 🚀 main.py                  # Skrip utama yang ringkas (< 150 baris)
+├── 🚀 main.py                  # Skrip utama Face AI & Meme Overlays
+├── 🎮 math_game.py             # Skrip Game Kuis Matematika berbasis Gerakan Jari
 ├── 📦 requirements.txt         # Daftar dependensi Python
 ├── 📄 .gitignore               # Konfigurasi filter Git
 └── 📖 README.md                # Dokumentasi proyek
 ```
+
+---
+
+## 🎮 Game Kuis Matematika Interaktif (`math_game.py`)
+
+Game kuis matematika edukatif dan seru yang dikontrol menggunakan **jumlah jari tangan yang diangkat (0 s.d. 10 jari)**!
+
+```bash
+# Jalankan Game Matematika
+python math_game.py
+
+# Menggunakan DroidCam
+python math_game.py -s 1
+```
+
+### 🎯 Cara Bermain:
+1. Soal matematika akan muncul di bagian atas layar (contoh: `4 + 3 = ?`).
+2. Angkat jari Anda (0 - 10 jari menggunakan 1 atau 2 tangan) sesuai hasil jawaban.
+3. Tahan posisi jari selama **1 detik** untuk mengonfirmasi jawaban.
+4. Kumpulkan **Streak Combo 🔥**, raih skor tertinggi, dan jangan sampai 3 nyawa habis!
+
+---
 
 ---
 
