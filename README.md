@@ -69,17 +69,36 @@ Open_CV/
 │   ├── face_recognition.py     # Modul FaceNet & MediaPipe Face Identity
 │   ├── face_expression.py      # Modul MediaPipe Face Mesh Expressions
 │   ├── hand_tracking.py        # Modul MediaPipe Hand Tracking & Gestures
+│   ├── ar_math_drag.py         # Modul Game AR Math Drag & Drop Balok Angka
 │   ├── math_game.py            # Modul logika kuis matematika & game
 │   ├── ar_filters.py           # Modul filter AR (Air Canvas, Face Visor, 3D Cube)
 │   └── utils.py                # Fungsi bantuan matematika, alpha overlay & HUD
 │
 ├── 🚀 main.py                  # Skrip utama Face AI & Meme Overlays
+├── 🧩 ar_math_game.py          # Skrip AR Math Game (Pinch & Drag Balok ke Slot)
 ├── 🎮 math_game.py             # Skrip Game Kuis Matematika berbasis Gerakan Jari
 ├── ✨ ar_experience.py         # Skrip Augmented Reality (AR) Studio Multi-Mode
 ├── 📦 requirements.txt         # Daftar dependensi Python
 ├── 📄 .gitignore               # Konfigurasi filter Git
 └── 📖 README.md                # Dokumentasi proyek
 ```
+
+---
+
+## 🧩 AR Math Game: Pinch & Drag Balok (`ar_math_game.py`)
+
+Game matematika interaktif Augmented Reality persis seperti video viral di TikTok / Claude:
+
+```bash
+python ar_math_game.py
+```
+
+### 🎯 Cara Bermain:
+1. Kotak persamaan matematika muncul di layar bawah: `[ 10 ] [ + ] [ 6 ] [ = ] [ ? ]`.
+2. Balok-balok angka melayang di udara di bagian kanan atas.
+3. **Cubit (*Pinch*)** jempol dan telunjuk pada balok angka untuk memegangnya.
+4. **Geser (*Drag*)** tangan ke slot kosong yang bertanda `?`.
+5. **Lepas cubitan (*Drop*)** untuk menaruh angka. Jika persamaan benar, Anda naik ke **Tahap Berikutnya** dan skor bertambah `+50`!
 
 ---
 
